@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+matplotlib = "*"
+numpy = "*"
+pyxdf = "*"
+pandas = "*"
+scipy = "*"
+seaborn = "*"
+mne = "*"
+bleak = "*"
+pylsl = "*"
+aioconsole = "*"
+biosppy = "*"
+influxdb-client = "*"
+python-dotenv = "*"
+stream-viewer = {git = "git+https://github.com/intheon/StreamViewer.git"}
+
+[dev-packages]
+rich = "*"
+
+[requires]
+python_version = "3.11"
