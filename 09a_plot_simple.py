@@ -91,7 +91,7 @@ def animate(frame):
     timestamps.append(timestamp - initial_timestamp)
     this_rr = sample[0]  # RR peaks in ms
     this_nn = this_rr - last_rr  # differential of RR peaks in ms
-    hr = int(60 / (this_rr / 1000))  # Heart Rate (HR) peaks in bpm
+    hr = 60 / (this_rr / 1000)  # Heart Rate (HR) peaks in bpm
     this_sdnn = np.std([rr_data_buffer[-i] for i in range(1, SDNN_WINDOW_SIZE)])
     # Extract fs from all the timestamps
     fs = 1 / np.median(np.diff(timestamps))
@@ -114,7 +114,7 @@ def animate(frame):
     rr_data_buffer.append(this_rr)
     nn_data_buffer.append(this_nn)
     sdnn_data_buffer.append(this_sdnn)
-    
+
     # RMS of the RR intervals
     rms = np.sqrt(np.mean(np.square(rr_data_buffer)))
 
@@ -122,8 +122,8 @@ def animate(frame):
     line_hr.set_ydata(hr_data_buffer)
     line_hr.set_xdata(timestamps)
 
-    line_rr.set_ydata(rr_data_buffer)
-    line_rr.set_xdata(timestamps)
+    # line_rr.set_ydata(rr_data_buffer)
+    # line_rr.set_xdata(timestamps)
 
     line_nn.set_ydata(np.multiply(nn_data_buffer, -1))
     line_nn.set_xdata(timestamps)
@@ -131,7 +131,7 @@ def animate(frame):
     line_sdnn.set_ydata(sdnn_data_buffer)
     line_sdnn.set_xdata(timestamps)
 
-    # Normalize power before plotting 
+    # Normalize power before plotting
     n_power = power / np.sum(power)
     freq_plot.set_ydata(n_power)
     freq_plot.set_xdata(freq)
@@ -144,23 +144,36 @@ def animate(frame):
     # Update the Poincaré plot
     poincare_plot.set_xdata(poincare_x)
     poincare_plot.set_ydata(poincare_y)
-    
+
     # Update titles
-    ax_hr.set_title(f"HR (AVG {np.mean(hr_data_buffer)} BPM, LST {hr} BPM), fs={fs:.4f}")
-    ax_rr.set_title(f"RR Intervals (AVG {np.mean(rr_data_buffer):.2f} ms, LST {this_rr:.2f} ms)")
+    ax_hr.set_title(f"HR (AVG {np.mean(hr_data_buffer):.2f} BPM, LST {hr:.2f} BPM), fs={fs:.4f}")
+    # ax_rr.set_title(f"RR Intervals (AVG {np.mean(rr_data_buffer):.2f} ms, LST {this_rr:.2f} ms)")
     ax_sdnn.set_title(f"SDNN over last {SDNN_WINDOW_SIZE} RR intervals (RMS {rms:.2f} ms)")
 
-    # Fill between nn_data_buffer and 0
-    ax_nn.fill_between(timestamps, np.multiply(nn_data_buffer, -1), 0, range(len(nn_data_buffer)), facecolor="tab:green", interpolate=True)
-    
+    # Fill the positive values of nn_data_buffer with green and the negative in red
+    ax_nn.fill_between(timestamps, 0, np.multiply(nn_data_buffer, -1), where=np.array(np.multiply(nn_data_buffer, -1)) >= 0, facecolor="coral", alpha=0.2)
+    ax_nn.fill_between(timestamps, 0, np.multiply(nn_data_buffer, -1), where=np.array(np.multiply(nn_data_buffer, -1)) < 0, facecolor="teal", alpha=0.2)
+
+    # Get score of sympathetic vs parasimpathetic in a range from -1 to 1
+    # Do so by averaging the area of the positive and negative parts of the nn_data_buffer
+    nn_interpret = np.multiply(nn_data_buffer, -1)
+    nn_area_total = np.sum(np.abs(nn_interpret))
+    nn_area_pos = np.sum(nn_interpret[nn_interpret >= 0])
+    nn_area_neg = np.sum(nn_interpret[nn_interpret < 0])
+
+    nn_ratio_pos = nn_area_pos / nn_area_total
+    nn_ratio_neg = nn_area_neg / nn_area_total
+    nn_balance = nn_ratio_pos * 2 - 1
+
+
     # Add red markers for the NN peaks above 50 ms
     threshold = np.abs(np.array(nn_data_buffer)) > 50
     pnn50s = -np.array(nn_data_buffer)[threshold]
     pnn50s_t = np.array(timestamps)[threshold]
     ax_nn.scatter(pnn50s_t, pnn50s, c="r")
     pnn50 = len(pnn50s)/len(nn_data_buffer)
-    ax_nn.set_title(f"-ΔRR (Δms), PNN50: {pnn50*100:.2f}%")
-    
+    ax_nn.set_title(f"-ΔRR (Δms), PNN50: {pnn50*100:.2f}%, NN balance: {nn_balance:.2f}")
+
     # Add markers for the 3 highest frequencies
     top_freqs_idx = np.argsort(power)[-3:]
     top_freqs = freq[top_freqs_idx]
@@ -174,7 +187,7 @@ def animate(frame):
     top_freqs_bpm = np.multiply(top_freqs, 60)
     top_freqs_bpm = [np.round(i, 2) for i in top_freqs_bpm]
     ax_freq.set_title(f"Frequency Spectrum, Top 3: {top_freqs_bpm} BPM")
-    
+
     print(f"got {hr} at time {timestamp - initial_timestamp:.4f}s, fs={fs:.4f}")
     print(f"    PNN50: {pnn50:.4f}, SDNN: {this_sdnn:.4f}, RMS: {rms:.4f}")
     print(f"    HF: {hf_power:.4f}, LF: {lf_power:.4f}, VLF: {vlf_power:.4f}")
@@ -187,8 +200,8 @@ def animate(frame):
     # Adjust the plot limits to display the scrolling effect
     ax_hr.relim()
     ax_hr.autoscale_view()
-    ax_rr.relim()
-    ax_rr.autoscale_view()
+    # ax_rr.relim()
+    # ax_rr.autoscale_view()
     ax_nn.relim()
     ax_nn.autoscale_view()
     ax_sdnn.relim()
@@ -201,7 +214,8 @@ def animate(frame):
     last_rr = this_rr
 
     # return line_hr, line_rr, line_nn, line_sdnn,
-    return line_hr, line_rr, line_nn, line_sdnn, poincare_plot, freq_plot
+    # return line_hr, line_rr, line_nn, line_sdnn, poincare_plot, freq_plot
+    return line_hr, line_nn, line_sdnn, poincare_plot, freq_plot
 
 # Resolve the LSL stream
 print("Looking for a marker stream...")
@@ -213,20 +227,21 @@ inlet = StreamInlet(streams[0])
 plot_sf = 2.5
 fig = plt.figure(figsize=(6.4 * plot_sf, 4.8 * plot_sf), layout="constrained")
 fig.canvas.manager.set_window_title(f"{device_name} HRV Live Plot")
-gs0 = fig.add_gridspec(4, 2)
+gs0 = fig.add_gridspec(3, 2)
 
 ax_hr = fig.add_subplot(gs0[0, 0])
-ax_rr = fig.add_subplot(gs0[1, 0])
-ax_nn = fig.add_subplot(gs0[2, 0])
-ax_sdnn = fig.add_subplot(gs0[3, 0])
+# ax_rr = fig.add_subplot(gs0[0, 0])
+ax_nn = fig.add_subplot(gs0[1, 0])
+ax_sdnn = fig.add_subplot(gs0[2, 0])
 ax_poincare = fig.add_subplot(gs0[:2, 1]) # Create a twin axes for the Poincaré plot
 ax_poincare.set_aspect('equal')
 ax_poincare.twinx() # Create a twin axes for the Poincaré plot
 ax_freq = fig.add_subplot(gs0[2:, 1])
 
 # Create empty plots
-line_hr, = ax_hr.step([],[], where="post", c="tab:blue")
-line_rr, = ax_rr.plot([], c="tab:orange")
+# line_hr, = ax_hr.step([],[], where="post", c="tab:blue")
+line_hr, = ax_hr.plot([], c="tab:blue")
+# line_rr, = ax_rr.plot([], c="tab:orange")
 line_nn, = ax_nn.plot([], c="tab:green")
 line_sdnn, = ax_sdnn.plot([], c="tab:red")
 poincare_plot, = ax_poincare.plot([], [], 'bo', ms=4)  # Poincaré plot
@@ -254,7 +269,7 @@ ax_nn.hlines(0, timestamps[0], timestamps[-1], colors="k", lw=1, alpha=0.2)
 
 # Titles for each subplot
 ax_hr.set_title("Heart Rate (BPM)")
-ax_rr.set_title("RR Intervals (ms)")
+# ax_rr.set_title("RR Intervals (ms)")
 ax_nn.set_title("-ΔRR (Δms)")
 ax_sdnn.set_title(f"SDNN over last {SDNN_WINDOW_SIZE} RR intervals")
 ax_poincare.set_title("ΔRR[n] vs ΔRR[n-1]")
