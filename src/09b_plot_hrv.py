@@ -112,15 +112,13 @@ def animate(frame):
     timestamps.append(this_timestamp)
     this_nn = this_rr - last_rr  # differential of RR peaks in ms
     hr = 60 / (this_rr / 1000)  # Heart Rate (HR) peaks in bpm
-    # this_sdnn = np.std([rr_data_buffer[-i] for i in range(1, FEAT_WINDOW_SIZE)])
-    # RMMSSD using hrv-analysis
-    if FEAT == "rmssd":
-        rr_intervals = [rr_data_buffer[-i] for i in range(1, FEAT_WINDOW_SIZE+1)]
-        rr_intervals = np.array(rr_intervals)
-        rr_intervals = remove_ectopic_beats(rr_intervals)
-        rr_intervals = interpolate_nan_values(rr_intervals)
-        nn_intervals = get_nn_intervals(rr_intervals)
-        this_feat = get_time_domain_features(nn_intervals=rr_intervals)["rmssd"]
+    rr_intervals = [rr_data_buffer[-i] for i in range(1, FEAT_WINDOW_SIZE+1)]
+    rr_intervals = np.array(rr_intervals)
+    rr_intervals = remove_ectopic_beats(rr_intervals)
+    rr_intervals = interpolate_nan_values(rr_intervals)
+    nn_intervals = get_nn_intervals(rr_intervals)
+    this_feats = get_time_domain_features(nn_intervals=rr_intervals)
+    this_feat = this_feats[FEAT]
     # Extract fs from all the timestamps
     fs = 1 / np.median(np.diff(timestamps))
     if np.isnan(fs):
@@ -133,9 +131,9 @@ def animate(frame):
     # HF: from 0.15 to 0.4 Hz
     # LF: from 0.04 to 0.15 Hz
     # VLF: from 0.0033 to 0.04 Hz
-    hf_power = np.sum(power[(freq >= 0.15) & (freq <= 0.4)])
-    lf_power = np.sum(power[(freq >= 0.04) & (freq <= 0.15)])
-    vlf_power = np.sum(power[(freq >= 0.0033) & (freq <= 0.04)])
+    # hf_power = np.sum(power[(freq >= 0.15) & (freq <= 0.4)])
+    # lf_power = np.sum(power[(freq >= 0.04) & (freq <= 0.15)])
+    # vlf_power = np.sum(power[(freq >= 0.0033) & (freq <= 0.04)])
 
     # Append the new data to the deques
     hr_data_buffer.append(hr)
@@ -143,9 +141,15 @@ def animate(frame):
     nn_data_buffer.append(this_nn)
     feat_data_buffer.append(this_feat)
 
-    # RMS of the RR intervals
-    rms = np.sqrt(np.mean(np.square(rr_data_buffer)))
-
+    time_feature_names = ["mean_nni", "sdnn", "sdsd", "rmssd", "median_nni", "nni_50", "pnni_50", "nni_20", "pnni_20", "range_nni", "cvsd", "cvnni", "mean_hr", "max_hr", "min_hr", "std_hr"]
+    time_feats = get_time_domain_features(nn_intervals=rr_intervals)
+    
+    freq_feature_names = ["total_power", "vlf", "lf", "hf", "lf_hf_ratio", "lfnu", "hfnu"]
+    freq_feats = get_frequency_domain_features(nn_intervals=rr_intervals)
+    
+    poincare_feature_names = ["sd1", "sd2", "ratio_sd1_sd2"]
+    poincare_feats = get_poincare_plot_features(nn_intervals=rr_intervals)
+    
     # Update the plot data
     line_hr.set_ydata(hr_data_buffer)
     line_hr.set_xdata(timestamps)
@@ -200,7 +204,7 @@ def animate(frame):
 
     nn_ratio_pos = nn_area_pos / nn_area_total
     nn_ratio_neg = nn_area_neg / nn_area_total
-    nn_balance = nn_ratio_pos * 2 - 1
+    nn_balance = nn_ratio_pos - nn_ratio_neg
 
 
     # Add red markers for the NN peaks above 50 ms
@@ -209,7 +213,7 @@ def animate(frame):
     pnn50s_t = np.array(timestamps)[threshold]
     ax_nn.scatter(pnn50s_t, pnn50s, c="r")
     pnn50 = len(pnn50s)/len(nn_data_buffer)
-    ax_nn.set_title(f"-ΔRR (Δms), PNN50: {pnn50*100:.2f}%, NN balance: {nn_balance:.2f}")
+    ax_nn.set_title(f"-ΔRR (Δms), PNN50: {time_feats['pnni_50']:.2f}% ({pnn50}), NN balance: {nn_balance:.2f}")
 
     # Add markers for the 3 highest frequencies
     top_freqs_idx = np.argsort(power)[-3:]
@@ -226,10 +230,11 @@ def animate(frame):
     ax_freq.set_title(f"Frequency Spectrum, Top 3: {top_freqs_bpm} BPM")
 
     print(f"got {hr} at time {this_timestamp:.4f}s, fs={fs:.4f}")
-    print(f"    PNN50: {pnn50:.4f}, SDNN: {this_feat:.4f}, RMS: {rms:.4f}")
-    print(f"    HF: {hf_power:.4f}, LF: {lf_power:.4f}, VLF: {vlf_power:.4f}")
-    print(f"    Total power: {np.sum(power):.4f}, HF/LF: {hf_power/lf_power:.4f}")
+    print(f"    PNN50: {time_feats['pnni_50']:.4f}, SDNN: {time_feats['sdnn']:.4f}, RMSSD: {time_feats['rmssd']:.4f}")
+    print(f"    HF: {freq_feats['hf']:.4f}, LF: {freq_feats['lf']:.4f}, VLF: {freq_feats['vlf']:.4f}")
+    print(f"    Total power: {freq_feats['total_power']:.4f}, HF/LF: {freq_feats['lf_hf_ratio']:.4f}")
     print(f"    Top 3 frequencies: {top_freqs}, BPM: {top_freqs_bpm}")
+    print(f"    Poincaré: SD1: {poincare_feats['sd1']:.4f}, SD2: {poincare_feats['sd2']:.4f}, ratio: {poincare_feats['ratio_sd2_sd1']:.4f}")
 
     # Add a vertical line to the HR plot
     # ax_nn.hlines(0, timestamps[0], timestamps[-1], colors="k", lw=1, alpha=0.2)
@@ -245,6 +250,7 @@ def animate(frame):
     ax_feat.autoscale_view()
     ax_poincare.relim()
     ax_poincare.autoscale_view()
+    ax_poincare.set_title(f"ΔRR[n] vs ΔRR[n-1] SD2/SD1: {poincare_feats['ratio_sd2_sd1']:.2f}")
     ax_freq.relim()
     ax_freq.autoscale_view()
 
