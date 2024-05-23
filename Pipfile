@@ -17,7 +17,8 @@ aioconsole = "*"
 biosppy = "*"
 influxdb-client = "*"
 python-dotenv = "*"
-stream-viewer = {git = "git+https://github.com/intheon/StreamViewer.git"}
+hrv-analysis = "*"
+# stream-viewer = {git = "git+https://github.com/intheon/StreamViewer.git"}
 
 [dev-packages]
 rich = "*"
