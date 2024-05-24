@@ -23,7 +23,7 @@ selected_rr_features = ["time", "frequency", "geometrical", "poincare", "csi_cvi
 
 
 # Set the number of data points to display in the scrolling plot
-MAX_DATA_POINTS = 100
+MAX_DATA_POINTS = 200
 POINCARE_LENGTH = 30  # Number of points to display in the Poincaré plot
 FEAT_WINDOW_SIZE = 30 # Number of points taken into account for the std
 FEAT = "rmssd"  # Feature to display in the lower plot
@@ -53,6 +53,7 @@ devices = [
     # {"address": "DB:6E:5B:87:4E:50", "name": "Polar H10", "uuid": "00002a37-0000-1000-8000-00805f9b34fb"},
     {"address": "C8:28:E6:77:9D:0D", "name": "Polar H10 D6B5C724", "uuid": "00002a37-0000-1000-8000-00805f9b34fb"},
     {"address": "A0:9E:1A:C5:36:32", "name": "Polar Sense C5363229", "uuid": "00002a37-0000-1000-8000-00805f9b34fb"},
+    {"address": "D6:E7:A7:D1:29:AE", "name": "Polar H10 CA549123", "uuid": "00002a37-0000-1000-8000-00805f9b34fb"},
     # {"address": "DE:C5:AC:14:25:28", "name": "HR6 0039090", "uuid": "00002a37-0000-1000-8000-00805f9b34fb"},
     # {"address": "CD:4B:39:D5:62:36", "name": "HR-70ECAB5D", "uuid": "00002a37-0000-1000-8000-00805f9b34fb"},
     # {"address": "CB:1E:40:C8:F6:03", "name": "HR-70EC985D", "uuid": "00002a37-0000-1000-8000-00805f9b34fb"},

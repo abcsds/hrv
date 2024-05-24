@@ -19,6 +19,7 @@ influxdb-client = "*"
 python-dotenv = "*"
 hrv-analysis = "*"
 # stream-viewer = {git = "git+https://github.com/intheon/StreamViewer.git"}
+imageio-ffmpeg = "*"
 
 [dev-packages]
 rich = "*"
