@@ -128,15 +128,16 @@ async def connect_to_device(
                     outlet_hr.push_sample([data['hr']])
                     if "rr" in data.keys():
                         for data_rr in data["rr"]:
-                            logging.info(f"    {device['name']} RR: {data_rr}")
+                            logging.info(f"                   RR: {data_rr}")
                             outlet_rr.push_sample([data_rr])
                     return data
                 else:
                     return None
 
             hr_data = await client.start_notify(HR_UUID, callback)
+            logging.info("HR data received from %s", address)
             while True:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.01)
 
         # The stack context manager exits here, triggering disconnection.
         # await client.stop_notify(HR_UUID)

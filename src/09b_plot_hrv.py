@@ -23,9 +23,9 @@ selected_rr_features = ["time", "frequency", "geometrical", "poincare", "csi_cvi
 
 
 # Set the number of data points to display in the scrolling plot
-MAX_DATA_POINTS = 200
-POINCARE_LENGTH = 30  # Number of points to display in the Poincaré plot
-FEAT_WINDOW_SIZE = 30 # Number of points taken into account for the std
+MAX_DATA_POINTS = 100
+POINCARE_LENGTH = 50  # Number of points to display in the Poincaré plot
+FEAT_WINDOW_SIZE = 100 # Number of points taken into account for the std
 FEAT = "rmssd"  # Feature to display in the lower plot
 
 average_hr = 60  # Average human hr
